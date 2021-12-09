@@ -1,0 +1,35 @@
+---
+# tasks file for ansible_netbox
+- name: Install the latest version of postgresql server
+  dnf:
+    name: postgresql-server
+    state: latest  
+  register: postgresql
+  become: yes
+
+- name: Initialise the database if postgres is updated or installed.
+  ansible.builtin.command:
+    cmd: postgresql-setup --initdb
+  when: postgresql.changed
+  become: yes
+
+
+  # /var/lib/pgsql/data/pg_hba.conf
+
+- name: Change postgres authentication to use local passwords
+  lineinfile:
+    dest: /var/lib/pgsql/data/pg_hba.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^host\s+all\s+all\s+\:\:1\/128\s+ident$', line: 'host    all             all             ::1/128                 md5' }
+    - { regexp: '^host\s+all\s+all\s+127.0.0.1\/32\s+ident$', line: 'host    all             all             127.0.0.1/32            md5' }
+  become: yes
+
+- name: Ensure postgresql is running
+  ansible.builtin.service:
+    name: postgresql
+    enabled: true
+    state: started
+  notify: Restart postgresql
+  become: yes

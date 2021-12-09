@@ -1,0 +1,6 @@
+---
+- hosts: netbox
+  tasks:
+    - name: Install Netbox
+      import_role:
+        name: ansible_netbox
